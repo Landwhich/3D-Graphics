@@ -1,0 +1,41 @@
+<h1 style="justify-self: center; padding-top: 40vh"><b>Will Richards</b> - <i>IMD 3002 - Prof. Chris Joslin</i></h1>
+
+<div style="page-break-after: always;"></div>
+
+<h2>Summary of Task:</h2>
+<p>
+    The goal of assignment 1 is to write a maya script in python to 
+    find the insection point between a circle center and each of its vectors on a 
+    cube
+</p>
+
+<h2>Methods Used:</h2>
+<p>
+    I found the course notes and tutorial sessions to be incredibly 
+    helpful for this assignment. I have included my notes to show my 
+    process but this generally follows the discuss ideas in class.
+    <br>
+    I took the following steps:
+    <ol>
+        <li>find circle midpoint using maya selection and xform</li>
+        <li>get all vertices and faces, subdivide target faces into triangles to get the facet normals</li>
+        <li>find the planar intersection and make sure it falls within the triangle</li>
+    </ol>
+    I later realized it wouldn't be so simple as I would have to check this for every target "sub-triangle" to find the 
+    shortest distance
+</p>
+
+<h2>Additional Info</h2>
+<p>
+    Here is the script woking for me:<br>
+    <div style="width:60vw; margin:auto;"><img style="width:100%;" src="../static/image.png"></div>
+    <br><br>
+    Here is my inital process:<br>
+    <div style="width:60vw; margin:auto;"><img style="width:100%;" src="../static/image.jpg"></div>
+</p>
+
+<h2>References:</h2>
+<p>
+    I used the maya documentation and lecture notes for this assignment, 
+    as well as tutorial notes for information on maya's object notation
+</p>

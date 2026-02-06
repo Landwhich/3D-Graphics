@@ -1,9 +1,7 @@
 import maya.cmds as cmds
 import math
 
-# -------------------------------------------------
-# UI
-# -------------------------------------------------
+# ---- UI
 
 WINDOW_NAME = "A01Window"
 
@@ -13,17 +11,15 @@ if cmds.window(WINDOW_NAME, exists=True):
 cmds.window(WINDOW_NAME, title="Don't Cross Me", widthHeight=(500, 300))
 cmds.columnLayout(adjustableColumn=True, rowSpacing=8)
 
-cmds.text(label="Select SPHERE first, then OBJECT to test", align="left")
-cmds.button(label="Check Intersections", height=40, command=lambda *_: findIntersect())
+cmds.text(label="click sphere -> then cube (or box drag both)", align="left")
+cmds.button(label="Check Intersections", height=40, command='findIntersect()')
 
 outputScroll = cmds.scrollField(editable=False, wordWrap=True, height=200)
 
 cmds.showWindow(WINDOW_NAME)
 
 
-# -------------------------------------------------
-# Math Utilities (NO external libraries)
-# -------------------------------------------------
+# --- Math funcs
 
 def dot(a, b):
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
@@ -57,15 +53,13 @@ def distance(a, b):
     return magnitude(subtract(a, b))
 
 
-# -------------------------------------------------
-# Geometry Helpers
-# -------------------------------------------------
+# --- Geometry funcs
 
 def triangleNormal(a, b, c):
     return normalize(cross(subtract(b, a), subtract(c, a)))
 
 def pointInTriangle(p, a, b, c):
-    # Barycentric test
+    # better than rasterizer project right side dot test. better computationally due to caching
     v0 = subtract(c, a)
     v1 = subtract(b, a)
     v2 = subtract(p, a)
@@ -98,32 +92,30 @@ def rayPlaneIntersection(rayOrigin, rayDir, p0, normal):
     return add(rayOrigin, multiply(rayDir, t))
 
 
-# -------------------------------------------------
-# Main Function
-# -------------------------------------------------
+# --- main()
 
 def findIntersect():
-    cmds.scrollField(outputScroll, edit=True, clear=True)
+    cmds.scrollField(outputScroll, clear=True)
 
     selection = cmds.ls(selection=True, transforms=True)
     if len(selection) != 2:
         cmds.warning("Select exactly two objects.")
         return
 
+    #sphere, then cube
     sphere, target = selection
 
-    # Get sphere center (world space)
     sphereCenter = cmds.xform(sphere, q=True, ws=True, rp=True)
 
-    # Get sphere vertices
+    #Get sphere vertices
     sphereShape = cmds.listRelatives(sphere, shapes=True)[0]
     sphereVerts = cmds.ls(f"{sphereShape}.vtx[*]", flatten=True)
 
-    # Get target mesh data
+    # cube
     targetShape = cmds.listRelatives(target, shapes=True)[0]
     faces = cmds.polyEvaluate(targetShape, face=True)
 
-    intersections = []
+    # intersections = []
     index = 1
 
     for vtx in sphereVerts:
@@ -136,17 +128,26 @@ def findIntersect():
 
         for f in range(faces):
             verts = cmds.polyInfo(f"{targetShape}.f[{f}]", faceToVertex=True)[0].split()[2:]
-            tri = [cmds.pointPosition(f"{targetShape}.vtx[{i}]", world=True) for i in verts[:3]]
+            verts = [int(v) for v in verts]
+            
+            pts = [cmds.pointPosition(f"{targetShape}.vtx[{i}]", world=True) for i in verts]
+            
+            triangles = [
+                (pts[0], pts[1], pts[2]),
+                (pts[0], pts[2], pts[3])
+            ]
+            
+            for tri in triangles:
+                normal = triangleNormal(tri[0], tri[1], tri[2])
+                hit = rayPlaneIntersection(sphereCenter, rayDir, tri[0], normal)
+            
+                if hit and pointInTriangle(hit, tri[0], tri[1], tri[2]):
+                    d = distance(sphereCenter, hit)
+                    if d < closestDist:
+                        closestDist = d
+                        closestHit = hit
+                        hitData = (tri, normal)
 
-            normal = triangleNormal(tri[0], tri[1], tri[2])
-            hit = rayPlaneIntersection(sphereCenter, rayDir, tri[0], normal)
-
-            if hit and pointInTriangle(hit, tri[0], tri[1], tri[2]):
-                d = distance(sphereCenter, hit)
-                if d < closestDist:
-                    closestDist = d
-                    closestHit = hit
-                    hitData = (tri, normal)
 
         if closestHit:
             cmds.polyCube(w=0.1, h=0.1, d=0.1)
@@ -157,12 +158,12 @@ def findIntersect():
             angle = math.degrees(math.acos(abs(dot(rayDir, [0,1,0]))))
 
             msg = (
-                f"{index}) Intersection @ ({closestHit[0]:.2f}, {closestHit[1]:.2f}, {closestHit[2]:.2f})\n"
-                f"   Line: {sphereCenter} -> {vtxPos}\n"
-                f"   Facet Area: {facetArea:.2f}\n"
-                f"   Distance to Vertex: {closestDist:.2f}\n"
-                f"   Normal: {[round(n,2) for n in normal]}\n"
-                f"   Angle to Grid: {angle:.2f}°\n\n"
+                f"  {index}) Intersection @ ({closestHit[0]:.2f}, {closestHit[1]:.2f}, {closestHit[2]:.2f})\n"
+                f"  Line: {sphereCenter} -> {vtxPos}\n"
+                f"  Facet Area: {facetArea:.2f}\n"
+                f"  Distance to Vertex: {closestDist:.2f}\n"
+                f"  Normal: {[round(n,2) for n in normal]}\n"
+                f"  Angle to Grid: {angle:.2f}degrees\n\n"
             )
 
             cmds.scrollField(outputScroll, edit=True, insertText=msg)
