@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="README.css">
+</head>
+<body>
+    <h2>Objectives</h2>
+    <p>
+        I fairly recently finished <a href="https://www.amazon.ca/Black-Swan-Improbable-Robustness-Fragility/dp/081297381X">The Black Swan</a> 
+        by <a href="https://www.amazon.ca/stores/Nassim-Nicholas-Taleb/author/B000APVZ7W?ref=ap_rdr&shoppingPortalEnabled=true">Nicholas Nassim Taleb</a> 
+        and have been inspired to create a mandlebrot set representation in Maya. 
+        There are various levels of complexity in acheiveing an effect like this. 
+        I will do my best to complete all of them but there of course <b>great lengths a project like this can be taken to</b> time permitting:
+    </p>
+    <ol start="0">
+        <li>Make extrude work on complex objects. (item #0 as this would not be considered to be in line with project definition but still complicated to acheive)</li>
+        <li>Create a "mock" Mandlebrot generation on objects. Something that approximates a Mandlebrot set to a recognizable degree to ensure extrusion in either direction is possible</li>
+        <li>An "art" effect on the extruded surfaces. likely a RG gradient to stretch from either side to better fulfill the 3D art theme for this year</li>
+        <li>Begin experimentation with LoD in an "infinite" zoom / "infinite" Mandlebrot set generation based on params on Maya GUI.</li>
+    </ol>
+    <p>
+        <b>To recap,</b> the designed script should allow the user to embed / extrude a Mandelbrot fractal into the face(s) of an object and optionally create an effect on the surface that has been effected. 
+        The mandelbrot fractal will scale to a certain (not actually infinite) point depending on user's input in the window. 
+        It is difficult to quantify to "utility" of this application given the nature of 3D art, however I beleive the repetitive nature of calulating any level of depth in a fractal lends itself well to Maya's API in scripting for 3D modelling.
+        I also think this will be an interesting area to explore given the many different ways a fractal can be loaded into software.
+    </p>
+    <h2>Requirements / Specifications</h2>
+    <p>
+        To better outline how I will adhere to the aforementioned objectives, I am providing a more specific set of rules to follow in design this script:
+    </p>
+    <ul>
+        <li>Extrusion/Embedding in a mesh will be togglable in the Gui along with an "onion-sketch layer" silhouette that displays how the effect will look.</li>
+        <li>For complexity reasons. The user will only be able to extrude/embed along the face's normal. The z-value for this will be availbale to change from the GUI</li>
+        <li>Extrusion should work on complex objects without destroying the mesh or creating non-manifold geometry. May need to clamp extrusions similar to how Blender's bevel tool works.</li>
+        <li>Mandlebrot approximation needs to appear as such. The "fractal" created should appear like the real thing, minus the ability to scale infinitely, at least at first. The lowest LoD should be able to run no problem on low-end computers (or least computers capable of running Maya Haha).</li>
+        <li>Given the specified LoD, the user should be able to scale to a point that appears correct on their mesh. Essentially LoD should be high enough fidelity that the user can utilize the script on a low-res mesh.</li>
+        <li>The gradient effect will appear like a standard RG uv map and the two colours will customizable from the GUI.</li>
+        <li>While I have not experimented much with camera clipping I'd like to try implementing dynamic LoD loading as the user scrolls further in to view the mesh. As a formal requirment for the project however, I'd like to ensure that LoD is Statically decided upon by the user withing the GUI</li>
+    </ul>
+    <h2>Coding Layout</h2>
+    <ul style="list-style: none;">
+        <li><code>getBounds()</code> - get bounds of selected faces Area. Ensure the faces are continuous so that the fractal continues throughout the selected mesha and that the faces share the same normal. (the same normal ensures that there are no non-manifold shapes created through collisions), then return the area to be rendered upon.</li>
+        <li><code>validSelection()</code> - Helper function to assist getBounds in ensuring the faces are uniform and with parallel normals. The previous function getBounds() will return the faces that will be rendered upon after being checked by validSelection()</li>
+        <li><code>renderPath()</code> - This function will draw the Mandlebrot fractal outline along valid faces after being checked. This render path is what will be referenced to create the "onion-sketch" overlay and the final render. renderPath() will take inputs like width, height, LoD, and other modifiers</li>
+        <li><code>createOnion()</code> - This function will take in the vertices specified by renderPath() and create a transluscent overlay to visualize the effect. The overlay will change with the z-value entered, and will not account for proper geometry checking as it is temporary</li>
+        <li><code>extrudePath()</code> - Take an input of renderPath() vertices, subdivide the face to support the added vectors and extrude by the input z-value. Varying levels of cleanup may have to be done but the user depending on how far I get in this project. This function returns the faces after extrusion to be used for color changes</li>
+        <li><code>embedPath()</code> - Take an input of renderPath() vertices, subdivide the face to support the added vectors and embed by the input z-value. Varying levels of cleanup may have to be done but the user depending on how far I get in this project. This function returns the faces after embedding to be used for color changes</li>
+        <li><code>colorFractal</code> - Applies a customizable lambert material to color extrusions/embeddings based on a Mandlebrot-esque pattern</li>
+    </ul>
+    <h2>Design Sketches</h2>
+</body>
+</html>
+
