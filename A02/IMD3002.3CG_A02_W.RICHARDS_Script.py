@@ -1,5 +1,6 @@
 import maya.cmds as cmds
 import random as rnd
+import math
 
 #UI Shenanigins
 
@@ -27,13 +28,41 @@ cmds.button(label="Create Axle", command=('makeAxle()'))
 cmds.setParent('..')
 cmds.setParent('..')
 
-# Curved Technic Triangle
-cmds.frameLayout(collapsable=True, label="Technic Misc", width=475)
+# Holed Technic Pieces
+cmds.frameLayout(collapsable=True, label="Holed Technic Pieces", width=475)
+cmds.columnLayout()
+cmds.optionMenu('holedLengthMenu', label="no of Studs for standard pieces")
+for i in [2,3,4,5,6,7,8,9,10,11,12,13]:
+    cmds.menuItem(label=str(i) + "L")
+cmds.colorSliderGrp('holedTechnicColour', label="Color", hsv=(3,0.9,0.9))
+cmds.intSliderGrp('angleLenA', l="Angled Arm A Length", min=2, max=10, v=5)
+cmds.intSliderGrp('angleLenB', l="Angled Arm B Length", min=2, max=10, v=3)
+cmds.optionMenu('angleDeg', label="no of Studs for standard pieces")
+for i in [45,90]:
+    cmds.menuItem(label=str(i))
+
+cmds.button(label="Create Angled Liftarm", command=('makeAngledLiftarm()'))
+cmds.button(label="Create Holed Piece", command=('makeHoledTechnic()'))
+cmds.button(label="Create Technic Brick", command=('makeTechnicBrick()'))
+
+cmds.setParent('..')
+cmds.setParent('..')
+
+# Thin Technic Misc
+cmds.frameLayout(collapsable=True, label="Thin Technic Misc", width=475)
 cmds.columnLayout()
 
-cmds.colorSliderGrp('larmColour', label="Color", hsv=(3,0.9,.75))
+cmds.colorSliderGrp('technicColor', label="Color", hsv=(3,0.9,.75))
 cmds.button(label="Create Curved L-Liftarm", command=('makeCurvedL()'))
+cmds.button(label="Create 2X1 Axle Connector", command=('makeAxle2X1Con()'))
 
+cmds.setParent('..')
+cmds.setParent('..')
+
+#Weheels
+cmds.frameLayout(collapsable=True, label="Thin Technic Misc", width=475)
+cmds.columnLayout()
+cmds.button(label="Create Technic Tire + Rim", command="makeTechnicTire()")
 cmds.setParent('..')
 cmds.setParent('..')
 
@@ -47,6 +76,7 @@ cmds.colorSliderGrp('brickColour', label="Color", hsv=(256, 1, 1))
 
 cmds.columnLayout()
 cmds.button(label="Get Bricked", command=('basicBrick()'))
+cmds.button(label="skinny Brick", command=('makeThinBrick()'))
 
 cmds.setParent('..')
 cmds.setParent('..')
@@ -66,6 +96,16 @@ cmds.setParent('..')
 cmds.setParent('..')
 
 cmds.showWindow(myWin)
+
+### Brick Size Globals: 
+
+g_brickWidthUnit = 0.8
+g_brickHeightUnit = 0.32
+g_studRadUnit = 0.25
+g_studHeightUnit = 0.2
+g_holeRadUnit = 0.26
+g_axleUnit = 0.10
+g_axleHoleUnit = 0.12
 
 def basicBrick():
     brickHeight = cmds.intSliderGrp('brickHeight', q=True, v=True)
@@ -100,17 +140,6 @@ def basicBrick():
     cmds.hyperShade(assign=(ns+":brckMat"))
     cmds.namespace(removeNamespace=":"+ns,mergeNamespaceWithParent=True)
     
-### Brick Size Globals: 
-
-g_brickWidthUnit = 0.8
-g_brickHeightUnit = 0.32
-g_studRadUnit = 0.25
-g_studHeightUnit = 0.2
-g_holeRadUnit = 0.26
-g_axleUnit = 0.1
-g_axleHoleUnit = 0.11
-
-
 def slopedBrick():
     brickHeight = 3
     brickWidth = cmds.intSliderGrp('slopedWidth', q=True, v=True)
@@ -164,6 +193,38 @@ def slopedBrick():
 
     cmds.namespace(removeNamespace=":"+ns,mergeNamespaceWithParent=True)
     
+def makeThinBrick():
+    brickWidth = cmds.intSliderGrp('brickWidth', q=True, v=True)
+    brickDepth = cmds.intSliderGrp('brickDepth', q=True, v=True)
+    rgb = cmds.colorSliderGrp('brickColour', q=True, rgbValue=True)
+    ns = "ThinBrick" + str(rnd.randint(1000, 9999))
+
+    cmds.select(clear=True)
+    cmds.namespace(add=ns)
+    cmds.namespace(set=ns)
+
+    brickSizeX = brickWidth * g_brickWidthUnit
+    brickSizeZ = brickDepth * g_brickWidthUnit
+    brickSizeY = g_brickHeightUnit
+
+    cmds.polyCube(h=brickSizeY, w=brickSizeX, d=brickSizeZ)
+    cmds.move((brickSizeY / 2.0), moveY=True)
+    for i in range(brickWidth):
+        for j in range(brickDepth):
+            cmds.polyCylinder(r=g_studRadUnit, h=g_studHeightUnit)
+            cmds.move((brickSizeY + 0.10), moveY=True, a=True)
+            cmds.move(((i * g_brickWidthUnit) - (brickSizeX/2.0) + 0.4), moveX=True, a=True)
+            cmds.move(((j * g_brickWidthUnit) - (brickSizeZ/2.0) + 0.4), moveZ=True, a=True)
+
+    myShader = cmds.shadingNode('lambert', asShader=True, name="brckMat")
+    cmds.setAttr(ns+":brckMat.color", rgb[0], rgb[1], rgb[2], typ='double3')
+
+    cmds.polyUnite((ns+":*"), n=ns, ch=False)
+    cmds.delete(ch=True)
+
+    cmds.hyperShade(assign=(ns+":brckMat"))
+    cmds.namespace(removeNamespace=":"+ns,mergeNamespaceWithParent=True)
+
 def makeAxle():
     axleLength = int(cmds.optionMenu('axleLengthMenu', q=True, v=True).replace("L",""))
     rgb = cmds.colorSliderGrp('axleColour', q=True, rgbValue=True)
@@ -190,7 +251,7 @@ def makeAxle():
     cmds.namespace(removeNamespace=":"+ns, mergeNamespaceWithParent=True)
     
 def makeCurvedL():
-    rgb = cmds.colorSliderGrp('larmColour', q=True, rgbValue=True)
+    rgb = cmds.colorSliderGrp('technicColor', q=True, rgbValue=True)
     ns = "LArm" + str(rnd.randint(1000, 9999))
 
     cmds.select(clear=True)
@@ -220,9 +281,9 @@ def makeCurvedL():
         if hole[0] == 0:
             cutter = cmds.polyCylinder(r=g_holeRadUnit, h=g_brickHeightUnit)[0]
         else:
-            xAxle = cmds.polyCube(w=g_axleHoleUnit, h=g_studRadUnit, d=(g_brickHeightUnit))[0]
+            xAxle = cmds.polyCube(w=g_axleHoleUnit, h=g_holeRadUnit, d=(g_brickHeightUnit))[0]
             cmds.rotate(0, 0, 90)
-            yAxle = cmds.polyCube(w=g_axleHoleUnit, h=g_studRadUnit, d=(g_brickHeightUnit))[0]
+            yAxle = cmds.polyCube(w=g_axleHoleUnit, h=g_holeRadUnit, d=(g_brickHeightUnit))[0]
             cutter = cmds.polyCBoolOp(xAxle, yAxle, op=1, ch=False)[0]
             cmds.rotate(90, 0, 0)
             cmds.delete(ch=True)
@@ -234,12 +295,204 @@ def makeCurvedL():
     mat = cmds.shadingNode("lambert", asShader=True, name="larmMat")
     cmds.setAttr(ns+":larmMat.color", rgb[0], rgb[1], rgb[2], typ="double3")
         
-    cmds.polyBevel( ns+':frame'+str(i)+'.e[166]', segments=4, offset=0.4 )
-    cmds.polyBevel( ns+':frame'+str(i)+'.e[167]', segments=4, offset=0.4 )
-    cmds.polyBevel( ns+':frame'+str(i)+'.e[166]', segments=4, offset=0.4 )
+    cmds.polyBevel( ns+':frame'+str(i)+'.e[166]', segments=4, offset=0.35 )
+    cmds.polyBevel( ns+':frame'+str(i)+'.e[167]', segments=4, offset=0.35 )
+    cmds.polyBevel( ns+':frame'+str(i)+'.e[166]', segments=4, offset=0.35 )
     cmds.select(ns+":*")
 
     # Material
     cmds.hyperShade(assign=(ns+":larmMat"))
     cmds.delete(ch=True)
     cmds.namespace(removeNamespace=":"+ns, mergeNamespaceWithParent=True)
+    
+def makeAxle2X1Con():
+    rgb = cmds.colorSliderGrp('technicColor', q=True, rgbValue=True)
+    ns = "axleSplice" + str(rnd.randint(1000, 9999))
+
+    cmds.select(clear=True)
+    cmds.namespace(add=ns)
+    cmds.namespace(set=ns)
+    
+    xAxle = cmds.polyCube(w=g_axleHoleUnit, h=g_holeRadUnit, d=(g_brickHeightUnit))[0]
+    cmds.rotate(0, 0, 90)
+    yAxle = cmds.polyCube(w=g_axleHoleUnit, h=g_holeRadUnit, d=(g_brickHeightUnit))[0]
+    cutter1 = cmds.polyCBoolOp(xAxle, yAxle, op=1, ch=False)[0]
+    cmds.rotate(90, 0, 0)
+    cmds.move(0, 0, g_brickWidthUnit / 2)
+    cutter2 = cmds.duplicate(cutter1)
+    cmds.move(0, 0, -g_brickWidthUnit / 2)
+    
+    base = cmds.polyCube(h=g_brickHeightUnit, w=g_brickWidthUnit, d=(2 * g_brickWidthUnit))
+    
+    cmds.polyCBoolOp(base, cutter1, cutter2, op=2, ch=False, n='base')[0]
+    
+    cmds.polyBevel( ns+':base.e[20]', ns+':base.e[22]', ns+':base.e[42]', ns+':base.e[74]', segments=4, offset=0.35 )
+
+    myShader = cmds.shadingNode('lambert', asShader=True, name="axleSpliceMat")
+    cmds.setAttr(ns+":axleSpliceMat.color", rgb[0], rgb[1], rgb[2], typ='double3')
+
+    cmds.select(ns+":*")
+    cmds.hyperShade(assign=(ns+":axleSpliceMat"))
+    cmds.delete(ch=True)
+    cmds.namespace(removeNamespace=":"+ns,mergeNamespaceWithParent=True)
+    
+def makeHoledTechnic():
+
+    size = int(cmds.optionMenu('holedLengthMenu', q=True, v=True).replace("L",""))
+    rgb = cmds.colorSliderGrp('holedTechnicColour', q=True, rgbValue=True)
+    ns = "HoledTechnic" + str(rnd.randint(1000, 9999))
+
+    cmds.select(clear=True)
+    cmds.namespace(add=ns)
+    cmds.namespace(set=ns)
+
+    holedLength = g_brickWidthUnit * size
+
+    cmds.polyCube(h=g_brickWidthUnit*0.9, w=g_brickWidthUnit, d=holedLength, n='base')
+    cmds.move((holedLength / 2.0), moveZ=True)
+    cmds.polyBevel(ns+':base.e[0]', ns+':base.e[1]', ns+':base.e[2]', ns+':base.e[3]', segments=4, offset=0.3)
+    for i in range(size):
+        cmds.polyCylinder(r=g_holeRadUnit, h=g_brickWidthUnit)
+        cmds.rotate(0,0,90)
+        cmds.move((i * g_brickWidthUnit) + (g_brickWidthUnit/2.0), moveZ=True, a=True)
+    cmds.polyCBoolOp(ns+':base', ns+':pCylinder*', op=2, ch=False, n='piece')[0]
+    
+    myShader = cmds.shadingNode('lambert', asShader=True, name="brckMat")
+    cmds.setAttr(ns+":brckMat.color", rgb[0], rgb[1], rgb[2], typ='double3')
+
+    cmds.delete(ch=True)
+    cmds.select(ns+':*')
+    cmds.hyperShade(assign=(ns+":brckMat"))
+    
+    cmds.namespace(removeNamespace=":"+ns,mergeNamespaceWithParent=True)
+
+def makeTechnicBrick():
+
+    size = int(cmds.optionMenu('holedLengthMenu', q=True, v=True).replace("L",""))
+    rgb = cmds.colorSliderGrp('holedTechnicColour', q=True, rgbValue=True)
+    ns = "HoledTechnic" + str(rnd.randint(1000, 9999))
+
+    cmds.select(clear=True)
+    cmds.namespace(add=ns)
+    cmds.namespace(set=ns)
+
+    length = g_brickWidthUnit * size
+    height = g_brickHeightUnit * 3
+
+    cmds.polyCube(h=height, w=g_brickWidthUnit, d=length, n='base')
+    cmds.move((length / 2.0), moveZ=True)
+    for i in range(size):
+        cmds.polyCylinder(r=g_studRadUnit, h=g_studHeightUnit, n="stud")
+        cmds.move(
+            0,
+            (height/2.0 + 0.10), 
+            (i * g_brickWidthUnit + g_brickWidthUnit * 0.5),
+        )
+        if not i: continue
+        cmds.polyCylinder(r=g_studRadUnit, h=g_brickWidthUnit)
+        cmds.rotate(0, 0, 90)
+        cmds.move(0, 0, g_brickWidthUnit * i)
+
+    cmds.polyCBoolOp(ns+':base', ns+':pCylinder*', op=2, ch=False, n='piece')[0]
+    
+    myShader = cmds.shadingNode('lambert', asShader=True, name="brckMat")
+    cmds.setAttr(ns+":brckMat.color", rgb[0], rgb[1], rgb[2], typ='double3')
+
+    cmds.delete(ch=True)
+    cmds.select(ns+':*')
+    cmds.hyperShade(assign=(ns+":brckMat"))
+    cmds.polyUnite(ch=False)
+    
+    cmds.namespace(removeNamespace=":"+ns,mergeNamespaceWithParent=True)
+
+def makeTechnicTire():
+    ns = "TechnicTire" + str(rnd.randint(1000, 9999))
+
+    cmds.select(clear=True)
+    cmds.namespace(add=ns)
+    cmds.namespace(set=ns)
+
+    tireOuterR = g_brickWidthUnit * 1.5
+    tireInnerR = g_brickWidthUnit * 0.85
+    tireWidth  = g_brickWidthUnit * 1.2
+    treadH     = g_brickWidthUnit * 0.28
+    treadW     = g_brickWidthUnit * 0.28
+    numTreads  = 16
+
+    # --- Outer tire cylinder with bevelled side edges ---
+    outer = cmds.polyCylinder(r=tireOuterR, h=tireWidth, sa=32, sh=1, sc=0, n='tireOuter')[0]
+    cmds.rotate(90, 0, 0)
+    cmds.makeIdentity(apply=True)
+    # Bevel the two circular rim edges (edge rings 0 and 1 on a cylinder = top/bottom loops)
+    cmds.polyBevel(ns+':tireOuter.e[0:31]', segments=2, offset=0.12, worldSpace=True)
+    cmds.polyBevel(ns+':tireOuter.e[32:63]', segments=2, offset=0.12, worldSpace=True)
+    cmds.delete(ch=True)
+
+    # --- Inner hollow ---
+    inner = cmds.polyCylinder(r=tireInnerR, h=tireWidth * 1.1, sa=32, sh=1, sc=0, n='tireInner')[0]
+    cmds.rotate(90, 0, 0)
+    cmds.makeIdentity(apply=True)
+
+    cmds.polyCBoolOp(ns+':tireOuter', ns+':tireInner', op=2, ch=False, n='tireTube')
+    cmds.delete(ch=True)
+
+    # --- Tread knobs: plain cubes, no bevel, positioned flush on surface ---
+    treadObjs = []
+    for i in range(numTreads):
+        angle = (360.0 / numTreads) * i
+        rad = math.radians(angle)
+        # Place centre of cube so its inner face sits on tireOuterR
+        x = math.sin(rad) * (tireOuterR + treadH / 2.0)
+        y = math.cos(rad) * (tireOuterR + treadH / 2.0)
+
+        tread = cmds.polyCube(w=treadH, h=treadW, d=tireWidth * 0.6, n='tread'+str(i))[0]
+        cmds.move(x, y, 0, a=True)
+        cmds.rotate(0, 0, -angle)
+        cmds.makeIdentity(apply=True)
+        treadObjs.append(ns+':tread'+str(i))
+
+    allParts = [ns+':tireTube'] + treadObjs
+    cmds.polyUnite(*allParts, ch=False, n='tireFull')
+    cmds.delete(ch=True)
+
+    # === RIM ===
+    cmds.polyCylinder(r=tireInnerR * 0.93, h=tireWidth * 0.55, sa=16, sh=1, sc=0, n='rimOuter')[0]
+    cmds.rotate(90, 0, 0)
+    cmds.makeIdentity(apply=True)
+    # Bevel rim edges too
+    cmds.polyBevel(ns+':rimOuter.e[0:15]', segments=2, offset=0.1, worldSpace=True)
+    cmds.polyBevel(ns+':rimOuter.e[16:31]', segments=2, offset=0.1, worldSpace=True)
+    cmds.delete(ch=True)
+
+    # === CROSS AXLE HOLE ===
+    crossSpan = g_axleHoleUnit * 2.5
+    crossThk  = g_axleHoleUnit
+
+    xBar = cmds.polyCube(w=crossThk, h=crossSpan, d=tireWidth, n='crossX')[0]
+    cmds.makeIdentity(apply=True)
+    yBar = cmds.polyCube(w=crossSpan, h=crossThk, d=tireWidth, n='crossY')[0]
+    cmds.makeIdentity(apply=True)
+
+    cross = cmds.polyCBoolOp(ns+':crossX', ns+':crossY', op=1, ch=False, n='crossHole')[0]
+    cmds.delete(ch=True)
+
+    cmds.polyCBoolOp(ns+':rimOuter', ns+':crossHole', op=2, ch=False, n='rim')
+    cmds.delete(ch=True)
+
+    # === MATERIALS ===
+    tireMat = cmds.shadingNode('lambert', asShader=True, name='tireMat')
+    cmds.setAttr(ns+':tireMat.color', 0.05, 0.05, 0.05, typ='double3')
+
+    rimMat = cmds.shadingNode('lambert', asShader=True, name='rimMat')
+    cmds.setAttr(ns+':rimMat.color', 0.75, 0.75, 0.75, typ='double3')
+
+    cmds.select(ns+':tireFull')
+    cmds.hyperShade(assign=(ns+':tireMat'))
+
+    cmds.select(ns+':rim')
+    cmds.hyperShade(assign=(ns+':rimMat'))
+
+    cmds.delete(ch=True)
+    cmds.namespace(removeNamespace=':'+ns, mergeNamespaceWithParent=True)
+
+
