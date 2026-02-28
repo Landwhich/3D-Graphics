@@ -28,6 +28,18 @@ cmds.button(label="Create Axle", command=('makeAxle()'))
 cmds.setParent('..')
 cmds.setParent('..')
 
+# Technic Pins
+cmds.frameLayout(collapsable=True, label="Technic Pins", width=475)
+cmds.columnLayout()
+cmds.optionMenu('pinLengthMenu', label="Pin Length")
+for i in [2,3]:
+    cmds.menuItem(label=str(i) + "L")
+cmds.colorSliderGrp('pinColour', label="Color", hsv=(200,0,0.2))
+cmds.button(label="Create Pin", command=('makePin()'))
+
+cmds.setParent('..')
+cmds.setParent('..')
+
 # Holed Technic Pieces
 cmds.frameLayout(collapsable=True, label="Holed Technic Pieces", width=475)
 cmds.columnLayout()
@@ -35,10 +47,10 @@ cmds.optionMenu('holedLengthMenu', label="no of Studs for standard pieces")
 for i in [2,3,4,5,6,7,8,9,10,11,12,13]:
     cmds.menuItem(label=str(i) + "L")
 cmds.colorSliderGrp('holedTechnicColour', label="Color", hsv=(3,0.9,0.9))
-cmds.intSliderGrp('angleLenA', l="Angled Arm A Length", min=2, max=10, v=5)
-cmds.intSliderGrp('angleLenB', l="Angled Arm B Length", min=2, max=10, v=3)
+cmds.intSliderGrp('angleLenA', l="Angled Arm A Length", f=True, min=2, max=10, v=5)
+cmds.intSliderGrp('angleLenB', l="Angled Arm B Length", f=True, min=2, max=10, v=3)
 cmds.optionMenu('angleDeg', label="no of Studs for standard pieces")
-for i in [45,90]:
+for i in [90, 135]:
     cmds.menuItem(label=str(i))
 
 cmds.button(label="Create Angled Liftarm", command=('makeAngledLiftarm()'))
@@ -250,6 +262,30 @@ def makeAxle():
 
     cmds.namespace(removeNamespace=":"+ns, mergeNamespaceWithParent=True)
     
+def makePin():
+    pinLength = int(cmds.optionMenu('pinLengthMenu', q=True, v=True).replace("L",""))
+    rgb = cmds.colorSliderGrp('pinColour', q=True, rgbValue=True)
+    ns = "Pin" + str(rnd.randint(1000, 9999))
+
+    cmds.select(clear=True)
+    cmds.namespace(add=ns)
+    cmds.namespace(set=':')
+    pinLength *= g_brickWidthUnit
+
+    cmds.polyCylinder(r=g_studRadUnit, h=(pinLength - g_studRadUnit), n=(ns+':base'))[0]
+    cmds.polyCylinder(r=g_studRadUnit * 0.8, h=(pinLength + g_studRadUnit), n=(ns+':cutter'))[0]
+    cmds.polyCBoolOp(ns+':base', ns+':cutter', op=2, ch=False, n=(ns+':pin'))
+    cmds.delete(ch=True)
+
+    myShader = cmds.shadingNode('lambert', asShader=True, name=(ns+':pinMat'))
+    cmds.setAttr(ns+':pinMat.color', rgb[0], rgb[1], rgb[2], typ='double3')
+    cmds.delete(ch=True)
+
+    cmds.select(ns+':pin')
+    cmds.hyperShade(assign=(ns+':pinMat'))
+
+    cmds.namespace(removeNamespace=':'+ns, mergeNamespaceWithParent=True)
+    
 def makeCurvedL():
     rgb = cmds.colorSliderGrp('technicColor', q=True, rgbValue=True)
     ns = "LArm" + str(rnd.randint(1000, 9999))
@@ -295,9 +331,13 @@ def makeCurvedL():
     mat = cmds.shadingNode("lambert", asShader=True, name="larmMat")
     cmds.setAttr(ns+":larmMat.color", rgb[0], rgb[1], rgb[2], typ="double3")
         
-    cmds.polyBevel( ns+':frame'+str(i)+'.e[166]', segments=4, offset=0.35 )
-    cmds.polyBevel( ns+':frame'+str(i)+'.e[167]', segments=4, offset=0.35 )
-    cmds.polyBevel( ns+':frame'+str(i)+'.e[166]', segments=4, offset=0.35 )
+    cmds.polyBevel( 
+        ns+':frame'+str(i)+'.e[166]', 
+        ns+':frame'+str(i)+'.e[168]', 
+        ns+':frame'+str(i)+'.e[170]', 
+        segments=4, offset=0.35 )
+    #cmds.polyBevel( ns+':frame'+str(i)+'.e[167]', segments=4, offset=0.35 )
+    #cmds.polyBevel( ns+':frame'+str(i)+'.e[166]', segments=4, offset=0.35 )
     cmds.select(ns+":*")
 
     # Material
@@ -419,16 +459,14 @@ def makeTechnicTire():
     treadW     = g_brickWidthUnit * 0.28
     numTreads  = 16
 
-    # --- Outer tire cylinder with bevelled side edges ---
     outer = cmds.polyCylinder(r=tireOuterR, h=tireWidth, sa=32, sh=1, sc=0, n='tireOuter')[0]
     cmds.rotate(90, 0, 0)
     cmds.makeIdentity(apply=True)
-    # Bevel the two circular rim edges (edge rings 0 and 1 on a cylinder = top/bottom loops)
+
     cmds.polyBevel(ns+':tireOuter.e[0:31]', segments=2, offset=0.12, worldSpace=True)
     cmds.polyBevel(ns+':tireOuter.e[32:63]', segments=2, offset=0.12, worldSpace=True)
     cmds.delete(ch=True)
 
-    # --- Inner hollow ---
     inner = cmds.polyCylinder(r=tireInnerR, h=tireWidth * 1.1, sa=32, sh=1, sc=0, n='tireInner')[0]
     cmds.rotate(90, 0, 0)
     cmds.makeIdentity(apply=True)
@@ -436,12 +474,11 @@ def makeTechnicTire():
     cmds.polyCBoolOp(ns+':tireOuter', ns+':tireInner', op=2, ch=False, n='tireTube')
     cmds.delete(ch=True)
 
-    # --- Tread knobs: plain cubes, no bevel, positioned flush on surface ---
     treadObjs = []
     for i in range(numTreads):
         angle = (360.0 / numTreads) * i
         rad = math.radians(angle)
-        # Place centre of cube so its inner face sits on tireOuterR
+        # centre of cube inner face on tireOuterR
         x = math.sin(rad) * (tireOuterR + treadH / 2.0)
         y = math.cos(rad) * (tireOuterR + treadH / 2.0)
 
@@ -455,16 +492,14 @@ def makeTechnicTire():
     cmds.polyUnite(*allParts, ch=False, n='tireFull')
     cmds.delete(ch=True)
 
-    # === RIM ===
     cmds.polyCylinder(r=tireInnerR * 0.93, h=tireWidth * 0.55, sa=16, sh=1, sc=0, n='rimOuter')[0]
     cmds.rotate(90, 0, 0)
     cmds.makeIdentity(apply=True)
-    # Bevel rim edges too
+
     cmds.polyBevel(ns+':rimOuter.e[0:15]', segments=2, offset=0.1, worldSpace=True)
     cmds.polyBevel(ns+':rimOuter.e[16:31]', segments=2, offset=0.1, worldSpace=True)
     cmds.delete(ch=True)
 
-    # === CROSS AXLE HOLE ===
     crossSpan = g_axleHoleUnit * 2.5
     crossThk  = g_axleHoleUnit
 
@@ -479,7 +514,6 @@ def makeTechnicTire():
     cmds.polyCBoolOp(ns+':rimOuter', ns+':crossHole', op=2, ch=False, n='rim')
     cmds.delete(ch=True)
 
-    # === MATERIALS ===
     tireMat = cmds.shadingNode('lambert', asShader=True, name='tireMat')
     cmds.setAttr(ns+':tireMat.color', 0.05, 0.05, 0.05, typ='double3')
 
@@ -488,11 +522,81 @@ def makeTechnicTire():
 
     cmds.select(ns+':tireFull')
     cmds.hyperShade(assign=(ns+':tireMat'))
-
     cmds.select(ns+':rim')
     cmds.hyperShade(assign=(ns+':rimMat'))
-
     cmds.delete(ch=True)
     cmds.namespace(removeNamespace=':'+ns, mergeNamespaceWithParent=True)
 
+def makeAngledLiftarm():
+    import math
+    lenA = cmds.intSliderGrp('angleLenA', q=True, v=True)
+    lenB = cmds.intSliderGrp('angleLenB', q=True, v=True)
+    deg  = int(cmds.optionMenu('angleDeg', q=True, v=True))
+    rgb  = cmds.colorSliderGrp('holedTechnicColour', q=True, rgbValue=True)
+    ns   = "AngledLiftarm" + str(rnd.randint(1000, 9999))
+    cmds.select(clear=True)
+    cmds.namespace(add=ns)
+    cmds.namespace(set=ns)
 
+    armW      = g_brickWidthUnit * 0.9
+    armH      = g_brickWidthUnit * 0.9
+    lengthA   = g_brickWidthUnit * lenA
+    lengthB   = g_brickWidthUnit * lenB
+    rotY      = 180 - deg
+
+    junctionZ = lengthA - (g_brickWidthUnit / 2.0)
+
+    bodyLenA = junctionZ
+    cmds.polyCube(h=armH, w=armW, d=bodyLenA, n='armA')
+    cmds.polyBevel(ns+':armA.e[0]', ns+':armA.e[1]',
+                   ns+':armA.e[2]', ns+':armA.e[3]', segments=3, offset=0.28)
+    cmds.delete(ch=True)
+    cmds.rotate(0, 0, 90, ns+':armA', a=True)
+    cmds.makeIdentity(ns+':armA', apply=True, t=True, r=True, s=True)
+    cmds.move(0, 0, bodyLenA / 2.0, ns+':armA', a=True)
+
+    startB = junctionZ - (g_brickWidthUnit / 2.0)
+    cmds.polyCube(h=armH, w=armW, d=lengthB, n='armB')
+    cmds.polyBevel(ns+':armB.e[0]', ns+':armB.e[1]',
+                   ns+':armB.e[2]', ns+':armB.e[3]', segments=3, offset=0.28)
+    cmds.delete(ch=True)
+    cmds.rotate(0, 0, 90, ns+':armB', a=True)
+    cmds.makeIdentity(ns+':armB', apply=True, t=True, r=True, s=True)
+    cmds.move(0, 0, startB + lengthB / 2.0, ns+':armB', a=True)
+    cmds.rotate(0, rotY, 0, ns+':armB', pivot=(0, 0, junctionZ), a=True)
+
+    cmds.polyUnite(ns+':armA', ns+':armB', ch=False, n='armFull')
+    cmds.delete(ch=True)
+    cmds.makeIdentity(ns+':armFull', apply=True, t=True, r=True, s=True)
+
+    cutters = []
+
+    for i in range(lenA):
+        zPos  = (i * g_brickWidthUnit) + (g_brickWidthUnit / 2.0)
+        hName = 'holeA' + str(i)
+        cmds.polyCylinder(r=g_holeRadUnit, h=armH * 2.0, sa=12, sh=1, sc=0, n=hName)
+        cmds.move(0, 0, zPos, ns+':'+hName, a=True)
+        cmds.makeIdentity(ns+':'+hName, apply=True, t=True, r=True, s=True)
+        cutters.append(ns+':'+hName)
+
+    for i in range(1, lenB):
+        localZ   = i * g_brickWidthUnit
+        hxOffset = math.sin(math.radians(rotY)) * localZ
+        hzOffset = math.cos(math.radians(rotY)) * localZ
+        hName    = 'holeB' + str(i)
+        cmds.polyCylinder(r=g_holeRadUnit, h=armH * 2.0, sa=12, sh=1, sc=0, n=hName)
+        cmds.rotate(0, rotY, 0, ns+':'+hName, a=True)
+        cmds.move(hxOffset, 0, junctionZ + hzOffset, ns+':'+hName, a=True)
+        cmds.makeIdentity(ns+':'+hName, apply=True, t=True, r=True, s=True)
+        cutters.append(ns+':'+hName)
+
+    cmds.polyCBoolOp(ns+':armFull', *cutters, op=2, ch=False, n='liftarm')
+    cmds.delete(ch=True)
+    cmds.xform(ns+':liftarm', centerPivots=True)
+
+    myShader = cmds.shadingNode('lambert', asShader=True, name='angledMat')
+    cmds.setAttr(ns+':angledMat.color', rgb[0], rgb[1], rgb[2], typ='double3')
+    cmds.select(ns+':liftarm')
+    cmds.hyperShade(assign=(ns+':angledMat'))
+    cmds.delete(ch=True)
+    cmds.namespace(removeNamespace=':'+ns, mergeNamespaceWithParent=True)

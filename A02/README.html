@@ -1,41 +1,131 @@
-<h1 style="justify-self: center; padding-top: 40vh"><b>Will Richards</b> - <i>IMD 3002 - Prof. Chris Joslin</i></h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 60px; line-height: 1.6; }
+        h1, h2 { color: #222; }
+        code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+        ol, ul { margin-left: 20px; }
+    </style>
+</head>
+<body>
 
-<div style="page-break-after: always;"></div>
+    <h1 style="justify-self: center; padding-top: 40vh">
+        <b>Will Richards</b> - <i>IMD 3002 - Prof. Chris Joslin</i>
+    </h1>
+    <h2 style="justify-self: center;">Assignment 02 - Too Technical</h2>
 
-<h2>Summary of Task:</h2>
-<p>
-    The goal of assignment 1 is to write a maya script in python to 
-    find the insection point between a circle center and each of its vectors on a 
-    cube
-</p>
+    <div style="page-break-after: always;"></div>
 
-<h2>Methods Used:</h2>
-<p>
-    I found the course notes and tutorial sessions to be incredibly 
-    helpful for this assignment. I have included my notes to show my 
-    process but this generally follows the discuss ideas in class.
-    <br>
-    I took the following steps:
+    <h2>Summary of Task</h2>
+    <p>
+        The goal of assignment 2 was to create a Maya GUI scripting tool in python, to generate Lego Technic pieces. 
+        These pieces needed to reflect Lego's specific sizing so that they fit together correctly when manually assembled. 
+    </p>
+
+    <h2>Method / Approach</h2>
+    <p>
+        My approach was based on reusing a set of global unit variables at the top of the 
+        script, derived from real Lego Technic measurements. All functions reference these globals, ensuring that every piece is consistent 
+        and physically compatible:
+    </p>
+    <ul>
+        <li><code>g_brickWidthUnit = 0.8</code> — 1x1 brick spacing</li>
+        <li><code>g_brickHeightUnit = 0.32</code> — thin plate height</li>
+        <li><code>g_studRadUnit = 0.25</code> — stud radius</li>
+        <li><code>g_holeRadUnit = 0.26</code> — technic/pin hole radius</li>
+        <li><code>g_axleUnit = 0.10</code> — axle arm thickness</li>
+        <li><code>g_axleHoleUnit = 0.12</code> — axle hole slot width</li>
+    </ul>
+    <p>
+        Each function follows the same general pattern: 
+        geometry is created and named within a namespace, a Lambert shader is created and 
+        assigned, and then the namespace is removed and merged back into the root. 
+        This pattern keeps the scene outliner clean regardless of how many pieces are generated. 
+        I tried to balance code reuse with optimal function structure. 
+        Some functions are parameterized if they can be, otherwize a single-use button was implemented for unique pieces
+    </p>
+    <p>
+        The required pieces implemented were:
+    </p>
     <ol>
-        <li>find circle midpoint using maya selection and xform</li>
-        <li>get all vertices and faces, subdivide target faces into triangles to get the facet normals</li>
-        <li>find the planar intersection and make sure it falls within the triangle</li>
+        <li>
+            <b>Standard Brick</b> — a <code>polyCube</code> body with a grid of 
+            <code>polyCylinder</code> studs, united with <code>polyUnite</code>. 
+            Width, depth, and height are all driven by the GUI sliders.
+        </li>
+        <li>
+            <b>Sloped Brick</b> — same base as the standard brick but with vertex displacement 
+            applied post-creation to collapse the top face into a slope. 
+            Supports 2, 3, and 4 stud depths with conditional vertex logic for each case.
+        </li>
+        <li>
+            <b>Holed Technic Liftarm</b> — a bevelled <code>polyCube</code> with 
+            <code>polyCylinder</code> cutters subtracted via <code>polyCBoolOp</code>. 
+            Length is driven by an option menu in the GUI.
+        </li>
+        <li>
+            <b>Angled Liftarm</b> — two bevelled arm bodies united together, with arm B 
+            rotated around a shared junction point. Hole cutters are placed along each arm's 
+            direction using trigonometry (<code>sin</code>/<code>cos</code> of the bend angle) 
+            and subtracted in a single boolean pass.
+        </li>
+        <li>
+            <b>Technic Axle</b> — two thin <code>polyCube</code> cross-section bars 
+            rotated 90 degrees relative to each other and united, forming the characteristic 
+            plus-sign cross section of a Lego Technic axle.
+        </li>
+        <li>
+            <b>Technic Pin</b> — a hollow cylinder created by subtracting a smaller inner 
+            cylinder from a larger outer one using <code>polyCBoolOp</code>.
+        </li>
+        <li>
+            <b>Technic Tire + Rim</b> — the tire is built as an outer cylinder minus an inner 
+            hollow, with 16 tread knob cubes placed radially and united. The rim is a separate 
+            cylinder with a cross-shaped axle hole subtracted, sized to <code>g_axleHoleUnit</code>.
+        </li>
+        <li>
+            <b>Curved L-Liftarm</b> — a square base with a cylinder subtracted to create the 
+            curved corner profile, then further booleans are used to add axle holes at the 
+            correct Technic spacing.
+        </li>
+        <li>
+            <b>2x1 Axle Connector</b> — a small rectangular body with two cross-shaped 
+            axle holes subtracted, one at each end, using unioned pairs of thin cubes as cutters.
+        </li>
     </ol>
-    I later realized it wouldn't be so simple as I would have to check this for every target "sub-triangle" to find the 
-    shortest distance
-</p>
+    <p>
+        One notable challenge was the <code>polyCBoolOp</code> function, which was unreliable 
+        when object transforms had not been frozen beforehand. The consistent fix was 
+        to call <code>cmds.makeIdentity(apply=True, t=True, r=True, s=True)</code> on all objects 
+        immediately after any transform, before passing them to the bool cut. This fixed the 
+        majority of boolean failures encountered during development.
+    </p>
 
-<h2>Additional Info</h2>
-<p>
-    Here is the script woking for me:<br>
-    <div style="width:60vw; margin:auto;"><img style="width:100%;" src="../static/image.png"></div>
-    <br><br>
-    Here is my inital process:<br>
-    <div style="width:60vw; margin:auto;"><img style="width:100%;" src="../static/image.jpg"></div>
-</p>
+    <h2>Additional Information</h2>
+    <p>
+        Code optimization was a conscious focus throughout. Rather than duplicating geometry 
+        creation logic, shared patterns (bevel, move, freeze, boolean) were kept the same for all
+        functions. The <code>makeAngledLiftarm</code> function in reuses 
+        the same hole-cutting pattern as <code>makeHoledTechnic</code> but extends it with 
+        trig offset calculations to place the bool cutters along the rotated arm B direction.
+    </p>
+    <p>
+        Boolean operations were kept to single multi-cutter calls where possible 
+        (passing all hole cylinders at once to one <code>polyCBoolOp</code> call) rather than 
+        chaining multiple sequential booleans, which both improves performance and reduces the 
+        chance of geometry errors accumulating. The same goes for multiple instances of beveling.
+    </p>
 
-<h2>References:</h2>
-<p>
-    I used the maya documentation and lecture notes for this assignment, 
-    as well as tutorial notes for information on maya's object notation
-</p>
+    <h2>References</h2>
+    <p>
+        I refered to the following youtube video to see some of the underlying structure of the model:
+
+        <a href="https://youtu.be/iFxSY0tkaY8?si=3DDb9c17OXuXoH3y"> Video Here </a><br><br>
+
+        Maya Python API documentation and course lecture notes were used as the primary references 
+        for all scripting methods, command flags, and geometry creation approaches. 
+    </p>
+
+</body>
+</html>
