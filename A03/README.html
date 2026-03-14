@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 60px; line-height: 1.6; }
+        h1, h2 { color: #222; }
+        code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+        ol, ul { margin-left: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1 style="justify-self: center; padding-top: 40vh">
+        <b>Will Richards</b> - <i>IMD 3002 - Prof. Chris Joslin</i>
+    </h1>
+    <h2 style="justify-self: center;">Assignment 03 - Image Based Lighting</h2>
+
+    <div style="page-break-after: always;"></div>
+
+    <h2>Summary of Task</h2>
+    <p>
+        The goal of Assignment 3 was to capture a real-world environment using a chrome mirror ball or fisheye lens,
+        process the photographs into a HDR image, unwrap it into a
+        panorama, and use the result as Image Based Lighting in
+        Autodesk Maya with the Arnold renderer. A 3D model was to then be placed into the scene and rendered
+        with the IBL derived from the scene.
+    </p>
+
+    <h2>Method / Approach</h2>
+    <p>
+        The workflow followed the tutorial pipeline: HDR capture of a chrome mirror ball,
+        merging in Photoshop, panorama unwrapping in Hugin, and final IBL rendering in Maya.
+    </p>
+
+    <p><b>HDR Capture and Merge</b></p>
+    <p>
+        Multiple exposures of a chrome mirror ball were taken to capture the full dynamic range
+        of the scene. These were merged into a single 32-bit HDR image using Photoshop's
+        Merge to HDR tool and exported as an OpenEXR file. The dark
+        look of the resulting image was expected, as the room itself was low-light, this is
+        handled correctly by the HDR format.
+    </p>
+
+    <p><b>Hugin Panorama Unwrapping</b></p>
+    <p>
+        The EXR was loaded into Hugin Panorama Stitcher to unwrap the mirror ball projection into a 
+        panorama suitable for IBL. Because Hugin does not include a Mirror Ball
+        lens type by default in the available version, the Orthographic lens type was used as the
+        closest equivalent to mirror ball projection. Control points were manually added, to compensate for this. 
+        After re-aligning with the corrected lens type and fiddling with some optimizations as well as 
+        yaw, pitch, and roll, the panorama was stitched and exported.
+    </p>
+
+    <p><b>IBL Setup in Maya</b></p>
+    <p>
+        The starter Maya scene was opened and the panorama was connected to an Arnold
+        <code>aiSkyDomeLight</code> node as the IBL source. A 
+        <a href="https://sketchfab.com/3d-models/9volt-battery-low-29545c6f342b4c47ad588ce3347b6802">9V battery model</a> (Not my model) 
+        was created and placed
+        into the scene. The <code>aiShadowMatte</code> material was used on the desk surface to catch
+        realistic contact shadows from the model. Render settings were configured in the Arnold Renderer
+        to export an exr file for its transparency property. The light of my room's
+        desk lamp and monitor was captured naturally by the IBL.
+    </p>
+
+    <h2>Challenges and Mistakes</h2>
+    <p>Several difficulties were encountered during the pipeline:</p>
+    <ol>
+        <li>
+            I had configured my camera to capture in JPEG format, which I had only discovered after having returned the mirror ball.
+        </li>
+        <li>
+            A broken tripod was also unhelpful and resulted in some video shaky-ness, as well as some ghostliness in the HDR photo.
+        </li>
+        <li>
+            Working with the mirror ball presented inherent constraints: the camera must remain in a fixed
+            position pointing at the ball, which limits angular variety and makes control point
+            matching more difficult. The absence of a native Mirror Ball lens type in the installed version
+            of Hugin added further complexity. 
+        </li>
+    </ol>
+
+    <h2>Additional Information</h2>
+    <p>
+        In retrospect, a fisheye lens approach would have been preferable to the mirror ball. A fisheye
+        shoot allows multiple angled captures from different orientations, producing more control points
+        and a more complete panorama with better panorama alignment.
+    </p>
+
+    <h2>References</h2>
+    <p>
+        Maya documentation and course lecture notes (T07 – Image Based Lighting) were used as primary
+        references for the IBL setup, Arnold renderer configuration, and Maya workflow. Hugin's official
+        documentation was referenced for control point placement and lens type selection.
+    </p>
+    <p>
+        Final render video: <a href="https://youtu.be/THQlPC0kD9M">https://youtu.be/THQlPC0kD9M</a>
+    </p>
+
+</body>
+</html>
