@@ -1,12 +1,12 @@
 """
-mandelbrot_fractal_tool.py
+mandelbrot_fractal_tool.py - prototype
 IMD 3002 - Will Richards
 Maya Python script: Mandelbrot Fractal Embedding Tool
 
 Provides a GUI-driven tool to:
   - Validate a face selection (shared normal, contiguous, manifold-safe)
   - Render a Mandelbrot fractal outline onto valid face bounds
-  - Display an "onion-sketch" overlay showing the effect before commit
+  - Display an "onion-sketch" overlay showing the effect before any actual transformations
   - Lay the foundation for future extrusion / embedding and colorization
 
 Not yet implemented (stubs provided):
@@ -16,7 +16,6 @@ Not yet implemented (stubs provided):
 """
 
 import maya.cmds as cmds
-import maya.OpenMaya as om
 import math
 
 
@@ -35,6 +34,26 @@ DEFAULT_Z_VALUE    = 0.2     # default extrusion depth (world units)
 # Onion-sketch curve group name
 ONION_GROUP = "mandelbrot_onion_grp"
 
+# ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
+
+def _vec_normalize(v):
+    x, y, z = v
+    mag = math.sqrt(x*x + y*y + z*z)
+    if mag < 1e-10:
+        raise ValueError("Cannot normalise a zero-length vector")
+    return (x/mag, y/mag, z/mag)
+
+def _vec_dot(a, b):
+    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+
+def _vec_cross(a, b):
+    return (
+        a[1]*b[2] - a[2]*b[1],
+        a[2]*b[0] - a[0]*b[2],
+        a[0]*b[1] - a[1]*b[0],
+    )
 
 # ===========================================================================
 # SECTION 1 — SELECTION VALIDATION
@@ -42,13 +61,13 @@ ONION_GROUP = "mandelbrot_onion_grp"
 
 def validSelection(faces):
     """
-    Validate that *faces* form a usable surface for fractal projection.
+    Validate that selected faces form a usable surface for fractal projection. 
+    this will be reused across multiple components of the script and will serve as a good error checker.
 
-    Rules
-    -----
-    1. At least one face must be selected.
-    2. All face normals must be approximately parallel (dot product ≥ threshold).
-    3. All faces must belong to the same mesh.
+    Checks:
+    - One and only one face must be selected.
+    - All face normals must be approximately parallel
+    - All faces must belong to the same mesh.
 
     Returns (True, faces, referenceNormal) on success.
     Raises RuntimeError with a descriptive message on failure.
@@ -56,12 +75,12 @@ def validSelection(faces):
     if not faces:
         raise RuntimeError("No faces selected. Please select one or more mesh faces.")
 
-    # Filter to only polygon face components
+    # filter to only valid poly faces
     poly_faces = [f for f in faces if ".f[" in f]
     if not poly_faces:
         raise RuntimeError("Selection contains no polygon faces.")
 
-    # Ensure single mesh
+    # Ensure only a single mesh
     meshes = set(f.split(".f[")[0] for f in poly_faces)
     if len(meshes) > 1:
         raise RuntimeError(
@@ -71,25 +90,21 @@ def validSelection(faces):
 
     mesh = list(meshes)[0]
 
-    # Gather normals via MFnMesh
-    sel = om.MSelectionList()
-    sel.add(mesh)
-    dag = om.MDagPath()
-    sel.getDagPath(0, dag)
-    fn_mesh = om.MFnMesh(dag)
-
     normals = []
     for face_str in poly_faces:
         idx = int(face_str.split(".f[")[1].rstrip("]"))
-        n = om.MVector()
-        fn_mesh.getPolygonNormal(idx, n, om.MSpace.kWorld)
-        normals.append(n)
+        # returns [nx, ny, nz] in world space
+        n = cmds.polyInfo("{}.f[{}]".format(mesh, idx), faceNormals=True)
+        # polyInfo returns strings like "FACE_NORMAL      5: 0.000 1.000 0.000"
+        parts = n[0].split()
+        nx, ny, nz = float(parts[-3]), float(parts[-2]), float(parts[-1])
+        normals.append((nx, ny, nz))
 
-    ref = normals[0].normal()
-    DOT_THRESHOLD = 0.98   # ~11 degrees tolerance
+    ref = _vec_normalize(normals[0])
+    DOT_THRESHOLD = 0.98  # ~11 degrees tolerance
 
     for i, n in enumerate(normals[1:], 1):
-        dot = ref * n.normal()
+        dot = _vec_dot(ref, _vec_normalize(n))
         if dot < DOT_THRESHOLD:
             raise RuntimeError(
                 "Face normals diverge too much (face index {} vs face 0, "
@@ -97,7 +112,6 @@ def validSelection(faces):
             )
 
     return True, poly_faces, ref
-
 
 # ===========================================================================
 # SECTION 2 — BOUNDS
@@ -111,56 +125,53 @@ def getBounds(faces):
     Returns a dict:
         {
             "mesh"   : str,
-            "normal" : MVector,
-            "center" : MPoint,
-            "u_axis" : MVector,   # local X on the face plane
-            "v_axis" : MVector,   # local Y on the face plane
+            "normal" : (nx, ny, nz),
+            "center" : (cx, cy, cz),
+            "u_axis" : (ux, uy, uz),   # local X on the face plane
+            "v_axis" : (vx, vy, vz),   # local Y on the face plane
             "width"  : float,
             "height" : float,
-            "verts"  : [(world_x, world_y, world_z), ...]  all corner verts
+            "verts"  : [(wx, wy, wz), ...]  all corner verts
         }
     """
     _valid, poly_faces, normal = validSelection(faces)
 
     mesh = poly_faces[0].split(".f[")[0]
 
-    sel = om.MSelectionList()
-    sel.add(mesh)
-    dag = om.MDagPath()
-    sel.getDagPath(0, dag)
-    fn_mesh = om.MFnMesh(dag)
-
-    # Collect all vertex positions for the selected faces
+    # Collect all vertex positions for the selected faces (world space)
+    seen = set()
     world_pts = []
-    vert_array = om.MPointArray()
-
     for face_str in poly_faces:
         idx = int(face_str.split(".f[")[1].rstrip("]"))
-        fn_mesh.getPolygonVertices   # just to confirm API works
-        int_array = om.MIntArray()
-        fn_mesh.getPolygonVertices(idx, int_array)
-        for vi in range(int_array.length()):
-            pt = om.MPoint()
-            fn_mesh.getPoint(int_array[vi], pt, om.MSpace.kWorld)
-            world_pts.append(pt)
+        vert_indices = cmds.polyInfo("{}.f[{}]".format(mesh, idx), faceToVertex=True)
+        # polyInfo returns e.g. "FACE_VERTEX      3:    0    1    2    3"
+        parts = vert_indices[0].split()
+        # parts[0]="FACE_VERTEX", parts[1]="3:", parts[2:]= vert ids
+        for vi_str in parts[2:]:
+            vi = int(vi_str)
+            if vi in seen:
+                continue
+            seen.add(vi)
+            pos = cmds.xform("{}.vtx[{}]".format(mesh, vi),
+                           query=True, worldSpace=True, translation=True)
+            world_pts.append(tuple(pos))  # (x, y, z)
 
     # Build a local UV frame on the face plane
-    # u_axis = any vector perpendicular to normal
-    world_up = om.MVector(0, 1, 0)
-    if abs(normal * world_up) > 0.99:
-        world_up = om.MVector(1, 0, 0)
-    u_axis = (world_up ^ normal).normal()
-    v_axis = (normal ^ u_axis).normal()
+    world_up = (0.0, 1.0, 0.0)
+    if abs(_vec_dot(normal, world_up)) > 0.99:
+        world_up = (1.0, 0.0, 0.0)
+    u_axis = _vec_normalize(_vec_cross(world_up, normal))
+    v_axis = _vec_normalize(_vec_cross(normal, u_axis))
 
     # Center of all verts
-    cx = sum(p.x for p in world_pts) / len(world_pts)
-    cy = sum(p.y for p in world_pts) / len(world_pts)
-    cz = sum(p.z for p in world_pts) / len(world_pts)
-    center = om.MPoint(cx, cy, cz)
+    cx = sum(p[0] for p in world_pts) / len(world_pts)
+    cy = sum(p[1] for p in world_pts) / len(world_pts)
+    cz = sum(p[2] for p in world_pts) / len(world_pts)
+    center = (cx, cy, cz)
 
-    # Project verts onto uv plane to get 2-D extents
-    us = [(om.MVector(p.x - cx, p.y - cy, p.z - cz) * u_axis) for p in world_pts]
-    vs = [(om.MVector(p.x - cx, p.y - cy, p.z - cz) * v_axis) for p in world_pts]
+    # Project verts onto UV plane to get 2-D extents
+    us = [_vec_dot((p[0]-cx, p[1]-cy, p[2]-cz), u_axis) for p in world_pts]
+    vs = [_vec_dot((p[0]-cx, p[1]-cy, p[2]-cz), v_axis) for p in world_pts]
 
     width  = max(us) - min(us)
     height = max(vs) - min(vs)
@@ -175,7 +186,6 @@ def getBounds(faces):
         "height" : height,
         "verts"  : world_pts,
     }
-
 
 # ===========================================================================
 # SECTION 3 — MANDELBROT CORE
