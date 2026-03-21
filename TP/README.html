@@ -1,11 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="README.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100..900;1,100..900&family=Victor+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
+    <style>  
+    .victor-mono {
+        font-family: "Victor Mono", monospace;
+        font-optical-sizing: auto;
+        font-weight: 200;
+        font-style: normal;
+    }
+    *{
+        margin: 0;
+        font-family: 'victor mono';
+        font-weight: 100;
+        font-size: 10px;
+    }
+
+    b{
+        font-weight: 700;
+    }
+
+    body{
+        margin: 40px 20px;
+    }
+
+    ol, ul{
+        margin: 10px auto;
+    }
+
+    h2{
+        color:#008888;
+        padding: 5px 0;
+        font-weight: bold;
+        font-size:15px
+    }
+
+    code{
+        font-family: 'Courier New', Courier, monospace;
+        padding: 2.5px 7.5px;
+        background-color: rgb(184, 184, 184);
+        border-radius: 5px;
+    }
+    table{
+        table-layout:fixed;
+    }
+    tr:nth-child(odd){
+        background-color: #D6EEEE;
+    }
+    td{
+        padding: 5px;
+    }
+    td:nth-child(1), td:nth-child(2){
+        width:15%;
+    }
+    span.part-b{
+        background: rgb(60, 200, 60);
+    }
+    </style>
 </head>
 <body>
-    <h1 style="justify-self: center; padding-top: 40vh"><b>Will Richards</b> - <i>IMD 3002 - Prof. Chris Joslin</i></h1>
-    <h2 style="justify-self: center;">Term Project - Part A (outline)</h2>
+    <h1 style="justify-self: center; padding-top: 40vh; font-size: 25px;"><b style="font-size:25px">Will Richards</b> - IMD 3002 - Prof. Chris Joslin</h1>
+    <h2 style="justify-self: center;">Mandelbrot Embedding Tool - Part B (Prototype)</h2>
+
+    <div style="page-break-after: always;"></div>
+
+    <table>
+    <tr>
+        <td><b>Version</b></td>
+        <td><b>Date</b></td>
+        <td><b>Description of Completed Tasks</b></td>
+    </tr>
+    <tr>
+        <td>Overview - A</td>
+        <td>Feb. 15th</td>
+        <td>Created a broad over view and outline of the project</td>
+    </tr>
+    <tr style="background-color: rgb(60, 200, 60);">
+        <td>Prototype - B</td>
+        <td>Mar. 20th</td>
+        <td>Modified the earlier report and included the addition of: Validity checking for user selction, bounds checking for the set to be projected onto a surface, onion-skin projection, and Majority of GUI completed</td>
+    </tr>
+    </table>
 
     <div style="page-break-after: always;"></div>
 
@@ -13,20 +90,20 @@
     <p>
         I fairly recently finished <a href="https://www.amazon.ca/Black-Swan-Improbable-Robustness-Fragility/dp/081297381X">The Black Swan</a> 
         by <a href="https://www.amazon.ca/stores/Nassim-Nicholas-Taleb/author/B000APVZ7W?ref=ap_rdr&shoppingPortalEnabled=true">Nicholas Nassim Taleb</a> 
-        and have been inspired to create a Mandlebrot set representation in Maya. 
+        and have been inspired to create a Mandelbrot set representation in Maya. 
         There are various levels of complexity in achieving an effect like this. 
         I will do my best to complete all of them but there are of course <b>great lengths a project like this can be taken to.</b> time permitting, I'd like to:
     </p>
     <ol start="0">
-        <li>Make extrude work on complex objects. (item #0 as this would not be considered to be in line with project definition but still complicated to achieve)</li>
-        <li>Create a "mock" Mandlebrot generation on objects. Something that approximates a Mandlebrot set to a recognizable degree to ensure extrusion in either direction is possible</li>
+        <li>Make extrude work on complex objects. (item #0 as this would not be considered to be in line with project definition but still complicated to achieve)</li><span class="part-b">Extrude has not been implemented yet</span>
+        <li>Create a "mock" Mandelbrot generation on objects. Something that approximates a Mandelbrot set to a recognizable degree to ensure extrusion in either direction is possible</li><span class="part-b">An onion-sketch does currently work and varies based on the z-value. Work needs to be done to further the embedding aspect, though extrusion appears as it should.</span>
         <li>An "art" effect on the extruded surfaces. likely a RG gradient to stretch from either side to better fulfill the 3D art theme for this year</li>
-        <li>Begin experimentation with LoD in an "infinite" zoom / "infinite" Mandlebrot set generation based on params on Maya GUI.</li>
+        <li>Begin experimentation with LoD in an "infinite" zoom / "infinite" Mandelbrot set generation based on params on Maya GUI.</li>
     </ol>
     <p>
         <b>To recap,</b> the designed script should allow the user to embed / extrude a Mandelbrot fractal into the face(s) of an object and optionally create an effect on the surface that has been affected. 
         The mandelbrot fractal will scale to a certain (not actually infinite) point depending on user's input in the window. 
-        It is difficult to quantify to "utility" of this application given the nature of 3D art, however I believe the repetitive nature of calculating any level of depth in a fractal lends itself well to Maya's API in scripting for 3D modelling.
+        It is difficult to quantify the "utility" of this application given the nature of 3D art, however I believe the repetitive nature of calculating any level of depth in a fractal lends itself well to Maya's API in scripting for 3D modelling.
         I also think this will be an interesting area to explore given the many different ways a fractal can be loaded into software.
     </p>
     <h2>Requirements / Specifications</h2>
@@ -36,24 +113,27 @@
     <ul>
         <li>Extrusion/Embedding in a mesh will be toggleable in the Gui along with an "onion-sketch layer" silhouette that displays how the effect will look.</li>
         <li>For complexity reasons. The user will only be able to extrude/embed along the face's normal. The z-value for this will be available to change from the GUI</li>
-        <li>Extrusion should work on complex objects without destroying the mesh or creating non-manifold geometry. May need to clamp extrusions similar to how Blender's bevel tool works.</li>
-        <li>Mandlebrot approximation needs to appear as such. The "fractal" created should appear like the real thing, minus the ability to scale infinitely, at least at first. The lowest LoD should be able to run no problem on low-end computers (or least computers capable of running Maya Haha).</li>
+        <li>Extrusion should work on complex objects without destroying the mesh or creating non-manifold geometry. May need to clamp extrusions similar to how Blender's bevel tool works.</li><span class="part-b">Currently weighing the plausibilty of this sort of capability. Extrusion may pose to diffuclt to handle correctly and it may be more effective to create the object and have the user connect the geometry themselves</span>
+        <li>Mandelbrot approximation needs to appear as such. The "fractal" created should appear like the real thing, minus the ability to scale infinitely, at least at first. The lowest LoD should be able to run no problem on low-end computers (or least computers capable of running Maya Haha).</li>
         <li>Given the specified LoD, the user should be able to scale to a point that appears correct on their mesh. Essentially LoD should be high enough fidelity that the user can utilize the script on a low-res mesh.</li>
         <li>The gradient effect will appear like a standard RG uv map and the two colours will customizable from the GUI.</li>
         <li>While I have not experimented much with camera clipping I'd like to try implementing dynamic LoD loading as the user scrolls further in to view the mesh. As a formal requirement for the project however, I'd like to ensure that LoD is Statically decided upon by the user within the GUI</li>
     </ul>
-    <h2>Coding Layout</h2>
-    <ul style="list-style: none;">
-        <li><code>getBounds()</code> - get bounds of selected faces Area. Ensure the faces are continuous so that the fractal continues throughout the selected mesh and that the faces share the same normal. (the same normal ensures that there are no non-manifold shapes created through collisions), then return the area to be rendered upon.</li>
-        <li><code>validSelection()</code> - Helper function to assist getBounds in ensuring the faces are uniform and with parallel normals. The previous function getBounds() will return the faces that will be rendered upon after being checked by validSelection()</li>
-        <li><code>renderPath()</code> - This function will draw the Mandlebrot fractal outline along valid faces after being checked. This render path is what will be referenced to create the "onion-sketch" overlay and the final render. renderPath() will take inputs like width, height, LoD, and other modifiers</li>
-        <li><code>createOnion()</code> - This function will take in the vertices specified by renderPath() and create a translucent overlay to visualize the effect. The overlay will change with the z-value entered, and will not account for proper geometry checking as it is temporary</li>
+    <h2>Coding Layout - Revised for Part B</h2>
+    Little changes have been made to the original plan, everything from helper math to onion layouts have been made. Physical embedding and extruding are the only parts to done aside from colouring. These functions will take a large majority of the allotted time depending on the methods used to implement (proper topology / bool operations / simple object instatntiation)
+    <ul>
+        <li><code>vector helpers</code> - A set of helpers to assist with the vector math to be done</li>
+        <li><code>validSelection()</code> - parses faces and runs error checks to ensure the selction is valid and can be used for any operation pertaining to the scope of this script </li>
+        <li><code>getBounds()</code> - runs to ensure that operations are confined to a valid area, operates on world space vertices and avoids duplicate counting of vertices in face parsing</li>
+        <li><code>mandelbrotIter()</code> - Generates the Mandelbrot set itself by iterating based on the number of iterations chosen by the user</li>
+        <li><code>renderPath()</code> - This function draws the Mandelbrot fractal outline along valid faces after being checked. <code>mandelBrotGrid()</code> is used to create the grid according to bounds set by <code>getBounds()</code>. This render path is what will be referenced to create the "onion-sketch" overlay and the final render. renderPath() will take inputs like width, height, LoD, and other modifiers</li>
+        <li><code>createOnion()</code> - defines a locator outline based on the vertices passed by the <code>renderPath()</code> function. <code>deleteOnion()</code> is also called to ensure the previous onion is deleted before creating a new one</li>
         <li><code>extrudePath()</code> - Take an input of renderPath() vertices, subdivide the face to support the added vectors and extrude by the input z-value. Varying levels of cleanup may have to be done but the user depending on how far I get in this project. This function returns the faces after extrusion to be used for color changes</li>
         <li><code>embedPath()</code> - Take an input of renderPath() vertices, subdivide the face to support the added vectors and embed by the input z-value. Varying levels of cleanup may have to be done but the user depending on how far I get in this project. This function returns the faces after embedding to be used for color changes</li>
-        <li><code>colorFractal</code> - Applies a customizable lambert material to color extrusions/embeddings based on a Mandlebrot-esque pattern</li>
+        <li><code>colorFractal</code> - Applies a customizable lambert material to color extrusions/embeddings based on a Mandelbrot-esque pattern</li>
     </ul>
     <h2>Design Sketches</h2>
-    <img src="./image.jpg" style="width:75%; margin: 1% 12.5%;">
+    <img src="/static/TP-A.jpg" style="width:75%; margin: 1% 12.5%;">
     <b>img GUI has ordered labels, explained below:</b>
     <ol>
         <li>Check Selection - button to verify that the selected faces are valid before user attempts to perform action</li>
@@ -70,6 +150,32 @@
         My hope is that it will be easy fast on the user side as it won't require geometry checking, though I will see after spending more time in Maya.
         This input scheme seems fairly intuitive and logical given the code needed to implement, though of course subject to change if I find a better way to lay things out.
     </p>
+    <h2>Progress Recap Since Part A</h2>
+    <div style="display:flex;" style="height:200px;">
+        <img src="/static/TP-B1.png" style="height:100%">
+        <img src="/static/TP-B2.png" style="height:100%">
+    </div>
+    <p>A lot of progress has been made since the project overview, likley just over 45%. There is still much to do, but the following has been implemented:</p>
+    <ul>
+        <li>Bounds and validity checking - a lot of this has been simply parsing faces to vertices with lots of help from both maya and python documentation</li>
+        <li>Mandelbrot - Pretty straightforward, Mandelbrot generation is a standard formula. The interesting part is creating a Mandelbrot grid using all the data generated by the bounds check. The received data is used to create a map to the bounds. This map / grid is then further used to place the Mandelbrot boundary lines within the shape's bounds. Boundary lines for the Mandelbrot set are created in essentially the same way an edge detection filter works, by checking current point against neighbour to detect a change.</li>
+        <li>Onion Skin - the onion skin is just taking the vectors created by the mandelbrot set and placing locators at that point in world space. There is a callback within the GUI to allow for updates to onion skin but the updates are very slow and will likely be removed / simply not used</li>
+        <li>Maya GUI - the last big thing introduced in this ppart of the project. The GUI is great as I learned a lot from Maya documentation regarding lambdas, callbacks, and mutable interfaces for GUI params / widgets. I have linked this resource below.</li>
+    </ul>
+    <h2>Steps for Part C</h2>
+    <p>
+        Steps for part A will require more research in to the best (most doable) method to actually construct the shapes, weither by attching them or generting a shape for the user to play with. 
+        Additionally, unless the reader knows of any resources pointing to dynamic loading of vertices relative camera space / distance based LoD within the cam space inside of Maya, the "progressive mesh" idea will have to be shelved for now.
+        Personal research has not shwon of any way to load vectors dynamically as the user scrolls into view of the mesh.
+    </p>
+    <h2>Resources:</h2>
+    <ul>
+        <li><a href="https://docs.python.org/3/library/stdtypes.html#str.format:~:text=str.format(*args%2C%20**kwargs)%C2%B6">Used for Python String formatting</a></li>
+        <li><a href="http://paulbourke.net/geometry/polygonmesh/">Methods of polygonal mesh calculations - used for centroid math and applications</a></li>
+        <li><a href="https://en.wikipedia.org/wiki/Mandelbrot_set">Used for Mandelbrot calculations</a></li>
+        <li><a href="https://help.autodesk.com/cloudhelp/2017/ENU/Maya-Tech-Docs/PyMel/ui.html?highlight=lambda">Fantastic Resource for maya API and GUI specific functions</a></li>
+        <li><a href="https://www.autodesk.com/support/technical/article/caas/tsarticles/ts/lC3jaffqnWFyQoLPEPm7n.html">Maya Documentation</a></li>
+    </ul>
 
 </body>
 </html>
