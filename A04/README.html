@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 60px; line-height: 1.6; }
+        h1, h2, h3 { color:rgb(52, 109, 214); }
+        code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+        ol, ul { margin-left: 20px; }
+    </style>
+</head>
+<body>
+ 
+    <h1 style="justify-self: center; padding-top: 40vh">
+        <b>Will Richards</b> - <i>IMD 3002 - Prof. Chris Joslin</i>
+    </h1>
+    <h2 style="justify-self: center;">Assignment 04 - Bring a Map!</h2>
+ 
+    <div style="page-break-after: always;"></div>
+ 
+    <h2>Summary of Task</h2>
+    <p>
+        The goal of Assignment 4 was to create a 3D environment ready for a game, by making use of 
+        texture mapping (normal/bump maps, displacement maps, and light maps).
+        The environment chosen was a dungeon, consisting of a corridor-style room with brick walls,
+        a tiled stone floor, wall-mounted torches, and decorative canvas paintings.
+        The dungeon was chosen for its easy producability by way of scripting and as an ideal location for 360 video.
+        The final deliverable consists of a high-polygon version of the environment used as a bake
+        source, and a low-polygon version with (some) detail and lighting encoded in maps rather than geometry.
+    </p>
+ 
+    <h2>Method / Approach</h2>
+ 
+    <p><b>High Polygon Environment</b></p>
+    <p>
+        Wall surfaces were populated with a brick generating script to facilitate easier modelling. 
+        The floor was similarly tiled using the same script in
+        floor mode. Torches were modelled from cylinders and tapered primitives,
+        providing silhouette objects for the displacement map requirement. A canvas frame prop
+        was also included. The high-polygon scene reached approximately 250K+ faces, providing
+        more than sufficient vertex density for baking detailed surface maps.
+    </p>
+ 
+    <p><b>Python Script</b></p>
+    <p>
+        A Python script with was written to make brick and tile surfaces easier to create. 
+        The script accepts parameters for surface type <code>(wall, floor, or ceiling),
+        surface dimensions, brick length, height, width, extrusion depth, mortar width, positional
+        variation, depth variation, and bevel size</code>. Each brick receives independent
+        random variation in position, scale, extrusion depth, and bevel.
+    </p>
+ 
+    <p><b>Normal Map Baking</b></p>
+    <p>
+        Normal maps were baked using Maya's Transfer Maps tool with Arnold's <code>aiNormalMap</code>
+        node used for application in Hypershade. Maps were made for torches, paitnings and walls, 
+        though the wall maps did not work. Considerable difficulty was
+        encountered during the baking process, detailed in the Challenges section below. 
+    </p>
+ 
+    <p><b>Displacement Map</b></p>
+    <p>
+        Displacement maps were applied to the torch bracket and canvas frame objects, which provide
+        clear silhouette geometry suitable for displacement. These objects were baked from their
+        high-polygon source geometry onto low-polygon proxy meshes.
+    </p>
+ 
+    <p><b>Light Map Baking</b></p>
+    <p>
+        Light maps were baked from the dungeon scene lighting, which consists of maya's mesh lights
+        positioned at each wall torch to simulate flame illumination. The room mesh
+        was used as the bake target for the light map. While light mapping proved more successful than normal mapping, 
+        the final map did not well emulate the lighting from holy-polygon scene.
+    </p>
+ 
+    <h2>Challenges and Limitations</h2>
+    <p>This assignment was one of the more challenging of the four and the challnges faces can be grouped into tow main categories, user challenges and software challenges</p>
+    <ol>
+        <li>
+            <b>User Challenge:</b> normal mapping with the walls simply would not work when applied to the walls. 
+            Multiple copies of the maps are left for the reader to examine if they wish thought in them there is little ot no detail.
+            Experimentation was done various different ways, in positioning the walls differently, envelope / depth thresholding, file types, Hypershade experimentation,
+            Binary viewing and editing within vscode, along with many other methods. 
+            Normal mapping seemingly worked fine with torches and paintings, but would not produce anything baked from the walls. 
+            After some research it seems it may simply be that the mesh needs to be broken up into many pieces but the held assumption wa that mapping for normals could be done with geometry used for light baking.
+        </li>
+        <li>
+            <b>User Challenge:</b> Light baking seems working though of low quality. while done according to instructions the light ouput is quite low, 
+            this could be improved by increasing lighting intensity and exposure but would go against the spirit of using a light bake. 
+            Unsure how to improve this aspect of the project currently.
+        </li>
+        <li>
+            <b>Software Challenge:</b> Unfortunately Maya was a very limiting factor in this assignment. 
+            250K faces was likely overkill for a high-poly however, by relying on gpu only for renders, 
+            Maya took many (supervised) hours to render out the high-poly portion and frequently crashed or corrupted.
+            the final render is only 540p with 8 bit colour and rather choppy despite this.
+        </li>
+    </ol>
+ 
+    <h2>Additional Information</h2>
+    <p>
+        In retrospect, beginning with a single isolated wall surface as a baking test before
+        generating the full environment would have identified the Transfer Maps configuration
+        issues much earlier in the process. The brick script worked well
+        and produced geometry of sufficient density and variation for baking purposes. Given
+        more time, each wall surface would have been extracted, baked individually at full
+        resolution, and reassembled into the complete low-polygon room with per-surface maps.
+    </p>
+ 
+    <h2>References</h2>
+    <p>
+        Maya documentation used for scripting and course lecture notes were used for the baking
+        workflow.
+    </p>
+    <p>
+        All brick and tile geometry was generated procedurally using an original Python script
+        written for this assignment. No external geometry assets were used for surfaces requiring
+        maps.
+    </p>
+ 
+</body>
+</html>
